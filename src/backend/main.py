@@ -161,11 +161,6 @@ async def chat(request: ChatRequest):
             end_time = datetime.utcnow()
             response_time = (end_time - start_time).total_seconds()
             
-            # Log metrics
-            mlflow.log_metric("response_time_seconds", response_time)
-            mlflow.log_metric("turn_count", result["state"]["turn_count"])
-            mlflow.log_metric("qualification_complete", 
-                            1 if result["qualification_complete"] else 0)
             
             # Store conversation
             conv_id = result["conversation_id"]
@@ -175,18 +170,18 @@ async def chat(request: ChatRequest):
             conversations[conv_id].append({
                 "timestamp": datetime.utcnow().isoformat(),
                 "user": request.message,
-                "agent": result["response"],
-                "qualification_complete": result["qualification_complete"]
+                "agent": result["chat_message"],
+                "qualification_status": result["qualification_status"]
             })
             
             logger.info(f"Response generated in {response_time:.2f}s")
             
             # Build response
             response = ChatResponse(
-                response=result["response"],
+                response=result["chat_message"],
                 conversation_id=conv_id,
-                qualification_complete=result["qualification_complete"],
-                qualification_result=result.get("qualification_result")
+                qualification_status=result["qualification_status"],
+                qualification_result=result.get("qualification_result"),
             )
 
             print('RESPONSE:\n\n', response)

@@ -113,7 +113,7 @@ class ChatResponse(BaseModel):
     """API response for chat interaction."""
     response: str = Field(..., description="Agent response")
     conversation_id: str = Field(..., description="Conversation ID")
-    qualification_complete: bool = Field(
+    qualification_status: str   = Field( # "in_progress" | "complete"
         default=False,
         description="Whether qualification is complete"
     )

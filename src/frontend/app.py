@@ -171,6 +171,9 @@ def display_qualification_result(result: dict):
 def main():
     """Main application."""
     init_session_state()
+
+    print('começou')
+    print(st.session_state.messages)
     
     # Header
     st.markdown('<div class="main-header">🏢 Terra - Qualifier Agent</div>', 
@@ -273,6 +276,7 @@ def main():
     # Display qualification result if complete
     if st.session_state.qualification_result:
         with st.container():
+            
             display_qualification_result(st.session_state.qualification_result)
     
     # Chat input
@@ -310,11 +314,13 @@ def main():
                     "role": "assistant",
                     "content": response["response"]
                 })
-                
+                print('teve response')
                 # Check if qualification is complete
                 if response.get("qualification_complete"):
                     st.session_state.qualification_result = response["qualification_result"]
                     st.balloons()
+                    with st.container():
+                        display_qualification_result(response["qualification_result"])
                 
                 st.rerun()
 

@@ -11,6 +11,7 @@ Objetivos da refatoração:
 import sys
 import uuid
 from pathlib import Path
+from enum import Enum
 from typing import Literal, List
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -26,6 +27,9 @@ from models.schemas import LeadQualification, NextStep, OwnerType
 from prompts.system_prompt import get_system_prompt
 from agents.state import QualificationState
 
+class QualificationStatus(str, Enum):
+    IN_PROGRESS = "in_progress"
+    COMPLETE = "complete"
 
 # -----------------------------
 # PROMPT DE EXTRAÇÃO ESTRUTURADA
@@ -218,10 +222,26 @@ class QualifierAgent:
         result = self.graph.invoke(state)
         last_message = result["messages"][-1]
 
+        print(result)
+
+        print('LAST MESSAGE:  ', last_message)
+
         qualification_result = None
         if result.get("qualification_complete"):
             qualification_result = output_parser.parse_qualification(last_message.content)
 
+        is_complete = result.get("qualification_complete", False)
+        qualification_status = (
+            QualificationStatus.COMPLETE if is_complete 
+            else QualificationStatus.IN_PROGRESS
+        )
+
+        return {
+            "chat_message": last_message.content,
+            "qualification_status": qualification_status.value,
+            "qualification_result": qualification_result,
+            "conversation_id": conversation_id,
+        }
         return {
             "response": last_message.content,
             "conversation_id": conversation_id,

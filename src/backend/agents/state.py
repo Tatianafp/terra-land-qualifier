@@ -5,7 +5,7 @@ This module defines the state structure that flows through
 the agent's state machine.
 """
 
-from typing import Annotated, List, Optional, Sequence
+from typing import Annotated, Optional, Sequence, Dict, Any
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -34,9 +34,13 @@ class QualificationState(TypedDict):
     # Validation flags
     location_validated: bool
     is_qualified: bool
+
+    # Qualification lifecycle
+    qualification_status: str  # "in_progress" | "complete"
+    qualification_complete: bool
     
     # Final output
-    qualification_complete: bool
+    qualification_result: Optional[Dict[str, Any]]
     next_step: Optional[str]
     
     # Metadata
