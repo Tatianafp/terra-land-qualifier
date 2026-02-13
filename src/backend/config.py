@@ -70,6 +70,18 @@ BAIRRO_FOCUS = {
     "Jurerê Internacional": "Luxo e alto padrão"
 }
 
+LOCAIS_ALVO = {
+    "Florianópolis": {
+        "apelidos": ["Floripa"],
+        "bairros": {
+            "Centro": "Studios e Comercial",
+            "Itacorubi": "Público universitário e tech",
+            "Campeche": "Rentabilidade de curto prazo/Airbnb",
+            "Jurerê Internacional": "Luxo e alto padrão"
+        }
+    }
+}
+
 CIDADE_ALVO = "Florianópolis"
 
 FALLBACK_MAP_URL = "https://www.google.com/maps/place/Florianópolis,+SC"

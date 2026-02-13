@@ -26,6 +26,8 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from agents.qualifier_agent import qualifier_agent
 from config import settings
 from models.schemas import ChatRequest, ChatResponse
+from utils.storage import qualification_storage
+from config import FALLBACK_MAP_URL
 
 # Configure logging
 logging.basicConfig(
@@ -156,7 +158,6 @@ async def chat(request: ChatRequest):
                 conversation_id=conv_id
             )
 
-            print(result)
             # Calculate metrics
             end_time = datetime.utcnow()
             response_time = (end_time - start_time).total_seconds()
@@ -176,6 +177,32 @@ async def chat(request: ChatRequest):
             
             logger.info(f"Response generated in {response_time:.2f}s")
             
+            # Save qualification to JSON file if complete
+            if result["qualification_status"] == "complete" and result.get("qualification_result"):
+                try:
+                    saved_path = qualification_storage.save_qualification(
+                        qualification=result["qualification_result"],
+                        conversation_id=conv_id
+                    )
+                    logger.info(f"Qualification saved to: {saved_path}")
+                    mlflow.log_param("qualification_saved", True)
+                    mlflow.log_param("qualification_file", str(saved_path))
+
+                except Exception as e:
+                    logger.error(f"Failed to save qualification: {e}", exc_info=True)
+                    mlflow.log_param("qualification_saved", False)
+
+            conversation_history = []
+                    
+            for turn in conversations[conv_id]:
+                conversation_history.append({"user":turn["user"]})
+                print(f"user: {turn['user']}")
+                print(f"agent: {turn['agent']}")
+                conversation_history.append({"agent":turn["agent"]})
+
+            print("__________________________")
+            print(conversation_history)
+            
             # Build response
             response = ChatResponse(
                 response=result["chat_message"],
@@ -184,8 +211,9 @@ async def chat(request: ChatRequest):
                 qualification_result=result.get("qualification_result"),
             )
 
-            print('RESPONSE:\n\n', response)
-            
+            print("__________________________")
+            print(response)
+
             return response
     
     except Exception as e:
@@ -232,6 +260,47 @@ async def delete_conversation(conversation_id: str):
         return {"message": "Conversation deleted", "conversation_id": conversation_id}
     
     raise HTTPException(status_code=404, detail="Conversation not found")
+
+
+@app.get("/api/qualifications")
+async def get_all_qualifications():
+    """
+    Retrieve all saved qualifications.
+    
+    Returns:
+        List of all qualification records
+    """
+    try:
+        qualifications = qualification_storage.get_all_qualifications()
+        return {
+            "total": len(qualifications),
+            "qualifications": qualifications
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving qualifications: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/qualifications/{conversation_id}")
+async def get_qualification(conversation_id: str):
+    """
+    Retrieve qualification by conversation ID.
+    
+    Args:
+        conversation_id: Conversation ID
+    
+    Returns:
+        Qualification data
+    
+    Raises:
+        HTTPException: If qualification not found
+    """
+    qualification = qualification_storage.get_qualification_by_id(conversation_id)
+    
+    if qualification is None:
+        raise HTTPException(status_code=404, detail="Qualification not found")
+    
+    return qualification
 
 
 if __name__ == "__main__":
